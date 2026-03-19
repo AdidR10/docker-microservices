@@ -5,7 +5,7 @@ services:
   user-service:
     build: ./user-service
     ports:
-      - "8000:8000"
+      - "8010:8000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/user_db
       - SECRET_KEY=your-secret-key-change-in-production
@@ -13,7 +13,8 @@ services:
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       - REFRESH_TOKEN_EXPIRE_DAYS=7
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   # Product Service
   product-service:
@@ -25,8 +26,10 @@ services:
       - MONGODB_DB=product_db
       - INVENTORY_SERVICE_URL=http://inventory-service:8002
     depends_on:
-      - mongo
-      - inventory-service
+      mongo:
+        condition: service_healthy
+      inventory-service:
+        condition: service_started
 
   # Inventory Service
   inventory-service:
@@ -36,7 +39,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/inventory_db
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   # Order Service
   order-service:
@@ -50,10 +54,14 @@ services:
       - PRODUCT_SERVICE_URL=http://product-service:8001
       - INVENTORY_SERVICE_URL=http://inventory-service:8002
     depends_on:
-      - mongo
-      - user-service
-      - product-service
-      - inventory-service
+      mongo:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
 
   # PostgreSQL (shared by user and inventory services)
   postgres:
@@ -61,11 +69,16 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_MULTIPLE_DATABASES=user_db,inventory_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init.sh:/docker-entrypoint-initdb.d/init.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # MongoDB (for product service)
   mongo:
@@ -74,6 +87,11 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

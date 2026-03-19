@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, status, Query, Depends
 from bson import ObjectId
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -25,7 +25,7 @@ def serialize_order(order: dict) -> dict:
 @router.post("/", response_model=Order, status_code=status.HTTP_201_CREATED)
 async def create_order(
     order_data: OrderCreate,
-    db: AsyncIOMotorDatabase = Query(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Create a new order with full validation, inventory reservation, and rollback on failure."""
     # Verify user exists
@@ -121,7 +121,7 @@ async def list_orders(
     end_date: Optional[str] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
-    db: AsyncIOMotorDatabase = Query(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Retrieve paginated list of orders with filtering by status, user, and date range."""
     query = {}
@@ -148,7 +148,7 @@ async def list_orders(
 @router.get("/{order_id}", response_model=Order)
 async def get_order(
     order_id: str,
-    db: AsyncIOMotorDatabase = Query(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Fetch detailed information for a specific order by its ID."""
     try:
@@ -174,7 +174,7 @@ async def get_user_orders(
     status: Optional[str] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
-    db: AsyncIOMotorDatabase = Query(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Get all orders for a specific user with status filtering and pagination."""
     query = {"user_id": user_id}
@@ -193,7 +193,7 @@ async def get_user_orders(
 async def update_order_status(
     order_id: str,
     status_update: StatusUpdate,
-    db: AsyncIOMotorDatabase = Query(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Update an order's status with validation and inventory impact handling."""
     try:
@@ -252,7 +252,7 @@ async def update_order_status(
 @router.delete("/{order_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def cancel_order(
     order_id: str,
-    db: AsyncIOMotorDatabase = Query(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Cancel an order if eligible and automatically release reserved inventory."""
     try:

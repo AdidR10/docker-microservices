@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, status, Query, Depends
 from bson import ObjectId
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -24,7 +24,7 @@ def serialize_product(product: dict) -> dict:
 @router.post("/", response_model=Product, status_code=status.HTTP_201_CREATED)
 async def create_product(
     product_data: ProductCreate,
-    db: AsyncIOMotorDatabase = Query(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Create a new product and auto-generate its inventory record."""
     product_doc = {
@@ -57,7 +57,7 @@ async def list_products(
     max_price: Optional[float] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
-    db: AsyncIOMotorDatabase = Query(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Retrieve a filtered and paginated list of products."""
     query = {}
@@ -81,7 +81,7 @@ async def list_products(
 @router.get("/{product_id}", response_model=Product)
 async def get_product(
     product_id: str,
-    db: AsyncIOMotorDatabase = Query(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Get detailed information for a single product by ID."""
     try:
@@ -105,7 +105,7 @@ async def get_product(
 async def update_product(
     product_id: str,
     product_update: ProductUpdate,
-    db: AsyncIOMotorDatabase = Query(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Partially update product details by ID."""
     try:
@@ -138,7 +138,7 @@ async def update_product(
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: str,
-    db: AsyncIOMotorDatabase = Query(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Delete a product by ID."""
     try:
@@ -162,7 +162,7 @@ async def delete_product(
 
 
 @router.get("/category/list")
-async def list_categories(db: AsyncIOMotorDatabase = Query(get_db)):
+async def list_categories(db: AsyncIOMotorDatabase = Depends(get_db)):
     """Retrieve a list of all unique product categories."""
     categories = await db.products.distinct("category")
     return {"categories": categories}
