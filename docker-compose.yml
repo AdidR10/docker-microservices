@@ -69,8 +69,8 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres-init.sh:/docker-entrypoint-initdb.d/init.sh
@@ -80,11 +80,11 @@ services:
       timeout: 5s
       retries: 5
 
-  # MongoDB (for product service)
+  # MongoDB (for product and order services)
   mongo:
     image: mongo:7
-    ports:
-      - "27017:27017"
+    expose:
+      - "27017"
     volumes:
       - mongo_data:/data/db
     healthcheck:
