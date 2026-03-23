@@ -15,9 +15,6 @@ def serialize_product(product: dict) -> dict:
     """Convert MongoDB document to API response."""
     if product:
         product["_id"] = str(product["_id"])
-        # Remove internal fields from response
-        product.pop("created_at", None)
-        product.pop("updated_at", None)
     return product
 
 
